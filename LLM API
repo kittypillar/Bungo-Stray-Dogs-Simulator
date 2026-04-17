@@ -1,0 +1,64 @@
+     1	import { NextRequest, NextResponse } from 'next/server';
+     2	import { LLMClient, Config, HeaderUtils } from 'coze-coding-dev-sdk';
+     3	
+     4	const MODEL_MAP: Record<string, string> = {
+     5	  doubao: 'doubao-seed-2-0-lite-260215',
+     6	  deepseek: 'deepseek-v3-2-251201',
+     7	  kimi: 'kimi-k2-5-260127',
+     8	};
+     9	
+    10	export async function POST(request: NextRequest) {
+    11	  try {
+    12	    const { text, author, model } = await request.json();
+    13	    const customHeaders = HeaderUtils.extractForwardHeaders(request.headers);
+    14	
+    15	    const config = new Config();
+    16	    const client = new LLMClient(config, customHeaders);
+    17	
+    18	    const systemPrompt = `你是一位专业的文学风格模仿大师。请将用户提供的文本改写成${author}的文风风格。
+    19	
+    20	要求：
+    21	1. 保持原文的核心意思和内容不变
+    22	2. 模仿${author}的语言风格、修辞特点和行文习惯
+    23	3. 确保改写后的文章自然流畅，符合${author}的典型风格
+    24	4. 不要在回复中添加任何解释或说明，只输出改写后的文章
+    25	
+    26	请直接输出改写后的文章，不要包含任何其他内容。`;
+    27	
+    28	    const messages = [
+    29	      { role: 'system' as const, content: systemPrompt },
+    30	      { role: 'user' as const, content: text },
+    31	    ];
+    32	
+    33	    const stream = client.stream(messages, {
+    34	      model: MODEL_MAP[model] || MODEL_MAP.doubao,
+    35	      temperature: 0.8,
+    36	    });
+    37	
+    38	    const encoder = new TextEncoder();
+    39	    const readable = new ReadableStream({
+    40	      async start(controller) {
+    41	        for await (const chunk of stream) {
+    42	          if (chunk.content) {
+    43	            controller.enqueue(encoder.encode(chunk.content.toString()));
+    44	          }
+    45	        }
+    46	        controller.close();
+    47	      },
+    48	    });
+    49	
+    50	    return new NextResponse(readable, {
+    51	      headers: {
+    52	        'Content-Type': 'text/plain; charset=utf-8',
+    53	        'Transfer-Encoding': 'chunked',
+    54	      },
+    55	    });
+    56	  } catch (error) {
+    57	    console.error('API Error:', error);
+    58	    return NextResponse.json(
+    59	      { error: '生成失败，请重试' },
+    60	      { status: 500 }
+    61	    );
+    62	  }
+    63	}
+    64	
