@@ -1,0 +1,181 @@
+'use client';
+     2	
+     3	import { useState } from 'react';
+     4	import { Button } from '@/components/ui/button';
+     5	import { Textarea } from '@/components/ui/textarea';
+     6	import { Card } from '@/components/ui/card';
+     7	
+     8	interface Author {
+     9	  name: string;
+    10	  desc: string;
+    11	}
+    12	
+    13	const authors: Author[] = [
+    14	  { name: '鲁迅', desc: '犀利·深刻' },
+    15	  { name: '张爱玲', desc: '细腻·华丽' },
+    16	  { name: '钱钟书', desc: '机智·博学' },
+    17	  { name: '沈从文', desc: '自然·淳朴' },
+    18	  { name: '朱自清', desc: '清新·典雅' },
+    19	  { name: '老舍', desc: '京味·幽默' },
+    20	];
+    21	
+    22	const models = [
+    23	  { id: 'doubao', name: '豆包' },
+    24	  { id: 'deepseek', name: 'DeepSeek' },
+    25	  { id: 'kimi', name: 'Kimi' },
+    26	];
+    27	
+    28	export default function Home() {
+    29	  const [text, setText] = useState('');
+    30	  const [selectedAuthor, setSelectedAuthor] = useState('鲁迅');
+    31	  const [selectedModel, setSelectedModel] = useState('doubao');
+    32	  const [result, setResult] = useState('');
+    33	  const [isLoading, setIsLoading] = useState(false);
+    34	  const [showResult, setShowResult] = useState(false);
+    35	
+    36	  const handleGenerate = async () => {
+    37	    if (!text.trim()) {
+    38	      alert('请输入要改写的文字');
+    39	      return;
+    40	    }
+    41	
+    42	    setIsLoading(true);
+    43	    setShowResult(false);
+    44	    setResult('');
+    45	
+    46	    try {
+    47	      const response = await fetch('/api/generate', {
+    48	        method: 'POST',
+    49	        headers: {
+    50	          'Content-Type': 'application/json',
+    51	        },
+    52	        body: JSON.stringify({
+    53	          text: text.trim(),
+    54	          author: selectedAuthor,
+    55	          model: selectedModel,
+    56	        }),
+    57	      });
+    58	
+    59	      if (!response.ok) {
+    60	        throw new Error('生成失败');
+    61	      }
+    62	
+    63	      const reader = response.body?.getReader();
+    64	      const decoder = new TextDecoder();
+    65	      let fullText = '';
+    66	
+    67	      if (reader) {
+    68	        setShowResult(true);
+    69	        while (true) {
+    70	          const { done, value } = await reader.read();
+    71	          if (done) break;
+    72	          const chunk = decoder.decode(value);
+    73	          fullText += chunk;
+    74	          setResult(fullText);
+    75	        }
+    76	      }
+    77	    } catch (error) {
+    78	      console.error('生成失败:', error);
+    79	      alert('生成失败，请重试');
+    80	    } finally {
+    81	      setIsLoading(false);
+    82	    }
+    83	  };
+    84	
+    85	  return (
+    86	    <div className="min-h-screen bg-background text-foreground">
+    87	      <main className="max-w-3xl mx-auto px-4 py-12">
+    88	        <header className="text-center pb-8 mb-8 border-b-2 border-foreground">
+    89	          <h1 className="text-4xl font-bold mb-2 tracking-[0.25em]">文豪模拟器</h1>
+    90	          <p className="text-sm text-muted-foreground tracking-[0.5em] uppercase">人人都是大文豪</p>
+    91	        </header>
+    92	
+    93	        <div className="space-y-8">
+    94	          <div className="space-y-3">
+    95	            <label className="text-sm font-semibold tracking-[0.1em] uppercase">输入文本</label>
+    96	            <Textarea
+    97	              value={text}
+    98	              onChange={(e) => setText(e.target.value)}
+    99	              placeholder="在此输入您想要改写的文字..."
+   100	              className="min-h-[150px] font-serif text-base leading-relaxed border-2 border-foreground focus:border-foreground focus:ring-0 rounded-none"
+   101	            />
+   102	          </div>
+   103	
+   104	          <div className="space-y-3">
+   105	            <label className="text-sm font-semibold tracking-[0.1em] uppercase">选择你的英雄</label>
+   106	            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+   107	              {authors.map((author) => (
+   108	                <label
+   109	                  key={author.name}
+   110	                  className={`relative flex flex-col items-center justify-center p-4 border-2 cursor-pointer transition-all ${
+   111	                    selectedAuthor === author.name
+   112	                      ? 'border-foreground bg-muted'
+   113	                      : 'border-border hover:border-foreground hover:bg-muted/50'
+   114	                  }`}
+   115	                >
+   116	                  <input
+   117	                    type="radio"
+   118	                    name="author"
+   119	                    value={author.name}
+   120	                    checked={selectedAuthor === author.name}
+   121	                    onChange={() => setSelectedAuthor(author.name)}
+   122	                    className="absolute opacity-0 w-0 h-0"
+   123	                  />
+   124	                  <span className="text-lg font-medium">{author.name}</span>
+   125	                  <span className="text-xs text-muted-foreground mt-1">{author.desc}</span>
+   126	                </label>
+   127	              ))}
+   128	            </div>
+   129	          </div>
+   130	
+   131	          <div className="space-y-3">
+   132	            <label className="text-sm font-semibold tracking-[0.1em] uppercase">选择模型</label>
+   133	            <div className="grid grid-cols-3 gap-3">
+   134	              {models.map((model) => (
+   135	                <label
+   136	                  key={model.id}
+   137	                  className={`relative flex items-center justify-center p-4 border-2 cursor-pointer transition-all ${
+   138	                    selectedModel === model.id
+   139	                      ? 'border-foreground bg-muted'
+   140	                      : 'border-border hover:border-foreground hover:bg-muted/50'
+   141	                  }`}
+   142	                >
+   143	                  <input
+   144	                    type="radio"
+   145	                    name="model"
+   146	                    value={model.id}
+   147	                    checked={selectedModel === model.id}
+   148	                    onChange={() => setSelectedModel(model.id)}
+   149	                    className="absolute opacity-0 w-0 h-0"
+   150	                  />
+   151	                  <span className="text-lg font-medium">{model.name}</span>
+   152	                </label>
+   153	              ))}
+   154	            </div>
+   155	          </div>
+   156	
+   157	          <Button
+   158	            onClick={handleGenerate}
+   159	            disabled={isLoading}
+   160	            className="w-full py-6 text-lg font-semibold tracking-[0.2em] uppercase bg-foreground text-background hover:bg-background hover:text-foreground border-2 border-foreground transition-all rounded-none"
+   161	          >
+   162	            {isLoading ? '生成中...' : '开始生成'}
+   163	          </Button>
+   164	
+   165	          {showResult && (
+   166	            <Card className="p-6 border-2 border-foreground bg-muted rounded-none">
+   167	              <div className="pb-4 mb-4 border-b border-border">
+   168	                <h2 className="text-xl font-semibold tracking-[0.1em]">生成结果</h2>
+   169	              </div>
+   170	              <div className="font-serif text-base leading-loose whitespace-pre-wrap">
+   171	                {result}
+   172	                <span className="inline-block w-px h-[1em] bg-foreground ml-0.5 align-text-bottom animate-pulse"></span>
+   173	              </div>
+   174	            </Card>
+   175	          )}
+   176	        </div>
+   177	      </main>
+   178	    </div>
+   179	  );
+   180	}
+   181	
