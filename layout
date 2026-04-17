@@ -1,0 +1,39 @@
+     1	import type { Metadata } from 'next';
+     2	import { Inspector } from 'react-dev-inspector';
+     3	import './globals.css';
+     4	
+     5	export const metadata: Metadata = {
+     6	  title: '文豪模拟器 - 人人都是大文豪',
+     7	  description: '文豪模拟器，让每个人都能写出文豪风格的文章',
+     8	  keywords: ['文豪模拟器', '文风仿写', 'AI写作', '鲁迅', '张爱玲'],
+     9	  authors: [{ name: '文豪模拟器团队' }],
+    10	  generator: '文豪模拟器',
+    11	  openGraph: {
+    12	    title: '文豪模拟器 - 人人都是大文豪',
+    13	    description: '文豪模拟器，让每个人都能写出文豪风格的文章',
+    14	    locale: 'zh_CN',
+    15	    type: 'website',
+    16	  },
+    17	  robots: {
+    18	    index: true,
+    19	    follow: true,
+    20	  },
+    21	};
+    22	
+    23	export default function RootLayout({
+    24	  children,
+    25	}: Readonly<{
+    26	  children: React.ReactNode;
+    27	}>) {
+    28	  const isDev = process.env.COZE_PROJECT_ENV === 'DEV';
+    29	
+    30	  return (
+    31	    <html lang="zh-CN">
+    32	      <body className={`antialiased font-serif`}>
+    33	        {isDev && <Inspector />}
+    34	        {children}
+    35	      </body>
+    36	    </html>
+    37	  );
+    38	}
+    39	
