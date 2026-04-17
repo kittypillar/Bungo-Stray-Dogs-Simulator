@@ -1,0 +1,7 @@
+##技术选择与规范
+
+###开发环境
+前端：HTML+CSS+JavaScript+Axios
+仿写模型：直接调用国内大模型API
+中转服务方案：Vercel Edge Function
+部署方案：Vercel
